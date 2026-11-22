@@ -8,15 +8,16 @@ import '../data/app_state.dart';
 import '../data/backend.dart';
 
 class _Logo extends StatelessWidget {
-  const _Logo({this.size = 40});
+  const _Logo({this.size = 40, this.color = TK.g});
   final double size;
+  final Color color;
   @override
   Widget build(BuildContext context) => Text('titik',
       style: TextStyle(
           fontSize: size,
           fontWeight: FontWeight.w800,
           letterSpacing: -1.5,
-          color: TK.g,
+          color: color,
           height: 1));
 }
 
@@ -46,31 +47,64 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFF17664F);
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            _Logo(size: 56),
-            SizedBox(height: 8),
-            Text('POS UNTUK USAHA ANDA',
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
-                    color: TK.mut)),
-            SizedBox(height: 40),
-            SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: TK.g)),
-            SizedBox(height: 12),
-            Text('Menyiapkan data di perangkat…',
-                style: TextStyle(fontSize: 13, color: TK.mut)),
-          ],
+      backgroundColor: bg,
+      body: Stack(children: [
+        Positioned(
+          top: -120,
+          right: -140,
+          child: Container(
+              width: 360,
+              height: 360,
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: Color(0xFF217D63))),
         ),
-      ),
+        Positioned(
+          bottom: -150,
+          left: -120,
+          child: Container(
+              width: 300,
+              height: 300,
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: Color(0xFF124F3D))),
+        ),
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              _Logo(size: 64, color: Colors.white),
+              SizedBox(height: 10),
+              Text('POS UNTUK USAHA ANDA',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.6,
+                      color: Color(0xFFCDE6DB))),
+            ],
+          ),
+        ),
+        Positioned(
+          left: 36,
+          right: 36,
+          bottom: 40,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: const LinearProgressIndicator(
+                  minHeight: 4,
+                  color: Color(0xFFB4BE99),
+                  backgroundColor: Color(0xFF3F8470)),
+            ),
+            const SizedBox(height: 14),
+            const Text('Menyiapkan data di perangkat…',
+                style: TextStyle(fontSize: 14, color: Color(0xFFE3F1EA))),
+            const SizedBox(height: 8),
+            const Text('Versi 1.0.0',
+                style: TextStyle(fontSize: 13, color: Color(0xFF9CC7B6))),
+          ]),
+        ),
+      ]),
     );
   }
 }
@@ -227,9 +261,10 @@ class _OpenShiftScreenState extends State<OpenShiftScreen> {
       showBack: false,
       bottom: Column(mainAxisSize: MainAxisSize.min, children: [
         TkButton('Mulai shift',
+            trailing: Icons.arrow_forward_rounded,
             onPressed: amount > 0 && !_busy ? () => _start(amount) : null),
         gap8,
-        Text('Shift dicatat ${hhmm(DateTime.now())} · Tersimpan di perangkat',
+        Text('Shift dicatat ${hhmm(DateTime.now())} WIB · Tersimpan di perangkat',
             style: const TextStyle(fontSize: 12, color: TK.mut)),
       ]),
       child: Column(
@@ -238,7 +273,7 @@ class _OpenShiftScreenState extends State<OpenShiftScreen> {
           Text('Halo, ${s.cashierName.split(' ').first}',
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -.5)),
           gap8,
-          Text('${tanggal(DateTime.now())} · Mulai shift sebelum berjualan.',
+          Text('${tanggalHari(DateTime.now())} · Mulai shift sebelum berjualan.',
               style: const TextStyle(color: TK.mut)),
           gap24,
           const Cap('Cabang'),
@@ -281,7 +316,7 @@ class _OpenShiftScreenState extends State<OpenShiftScreen> {
           gap16,
           const TkBanner('Hitung uang tunai dulu',
               body: 'Angka ini dipakai untuk mencocokkan kas saat shift ditutup.',
-              icon: Icons.info_outline_rounded),
+              icon: Icons.warning_amber_rounded),
         ],
       ),
     );

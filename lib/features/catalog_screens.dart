@@ -7,7 +7,6 @@ import '../core/pricing.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import '../data/app_state.dart';
-import '../data/models.dart';
 
 /// M13 - Katalog kasir (membaca dari database lokal; tanpa internet)
 class CatalogScreen extends StatefulWidget {
@@ -36,57 +35,66 @@ class _CatalogScreenState extends State<CatalogScreen> {
         if (!cats.contains(_cat)) _cat = 'Semua';
         final list = s.search(_q.text, category: _cat);
         return Scaffold(
-          appBar: AppBar(
-            toolbarHeight: 64,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(s.businessName),
-                Text('${s.branch} · Kasir ${s.cashierName.split(' ').first}',
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w500, color: TK.mut)),
-              ],
-            ),
-            automaticallyImplyLeading: false,
-            actions: [
-              IconButton(
-                  tooltip: 'Scan barcode',
-                  onPressed: () => Navigator.pushNamed(context, Routes.scan),
-                  icon: const Icon(Icons.qr_code_scanner_rounded)),
-              IconButton(
-                  tooltip: 'Riwayat',
-                  onPressed: () => Navigator.pushNamed(context, Routes.history),
-                  icon: const Icon(Icons.receipt_long_rounded)),
-              IconButton(
-                  tooltip: 'Profil',
-                  onPressed: () => Navigator.pushNamed(context, Routes.profile),
-                  icon: const Icon(Icons.person_outline_rounded)),
-            ],
-          ),
           body: SafeArea(
             child: Column(
               children: [
-                _SyncStrip(s),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.businessName,
+                              style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -.6)),
+                          Text('${s.branch} · Kasir ${s.cashierName.split(' ').first}',
+                              style: const TextStyle(fontSize: 13, color: TK.mut)),
+                        ],
+                      ),
+                    ),
+                    TonalIconButton(Icons.history_rounded, 'Riwayat',
+                        () => Navigator.pushNamed(context, Routes.history)),
+                    const SizedBox(width: 8),
+                    TonalIconButton(Icons.qr_code_scanner_rounded, 'Scan barcode',
+                        () => Navigator.pushNamed(context, Routes.scan)),
+                    const SizedBox(width: 8),
+                    TonalIconButton(Icons.person_outline_rounded, 'Profil',
+                        () => Navigator.pushNamed(context, Routes.profile)),
+                  ]),
+                ),
+                _SyncBanner(s),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: TextField(
                     controller: _q,
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
-                      hintText: 'Cari nama, SKU, atau barcode',
-                      prefixIcon: const Icon(Icons.search_rounded),
+                      hintText: 'Cari produk atau barcode',
+                      hintStyle: const TextStyle(color: TK.mut),
+                      prefixIcon: const Icon(Icons.search_rounded, color: TK.mut),
                       suffixIcon: _q.text.isEmpty
                           ? null
                           : IconButton(
                               tooltip: 'Hapus pencarian',
                               icon: const Icon(Icons.close_rounded),
                               onPressed: () => setState(_q.clear)),
-                      isDense: true,
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: TK.line)),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: TK.g, width: 1.6)),
                     ),
                   ),
                 ),
                 SizedBox(
-                  height: 60,
+                  height: 64,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.all(12),
@@ -103,10 +111,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             backgroundColor: Colors.white,
                             side: BorderSide(color: _cat == c ? TK.g : TK.line),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18)),
+                                borderRadius: BorderRadius.circular(22)),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             labelStyle: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: _cat == c ? Colors.white : TK.ink),
                           ),
                         ),
@@ -119,7 +129,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Daftar produk',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                       Text('${list.length} produk',
                           style: const TextStyle(color: TK.mut, fontSize: 13)),
                     ],
@@ -136,7 +146,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           itemCount: list.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (_, i) => _ProductTile(list[i].id),
                         ),
                 ),
@@ -146,17 +156,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
           bottomNavigationBar: s.cartCount == 0
               ? null
               : Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(top: BorderSide(color: TK.line))),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  color: TK.bg,
                   child: SafeArea(
                     top: false,
-                    child: TkButton(
-                      'Lihat keranjang · ${s.cartCount} item   ${rupiah(s.subtotal)}',
-                      icon: Icons.shopping_bag_outlined,
-                      onPressed: () => Navigator.pushNamed(context, Routes.cart),
-                    ),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      TkButton(
+                        'Lihat keranjang · ${s.cartCount} item   ${rupiah(s.subtotal)}',
+                        trailing: Icons.arrow_forward_rounded,
+                        onPressed: () => Navigator.pushNamed(context, Routes.cart),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                          s.lastSyncAt == null
+                              ? 'Tersimpan di perangkat'
+                              : 'Tersimpan di perangkat · Sinkron terakhir ${hhmm(s.lastSyncAt!)}',
+                          style: const TextStyle(fontSize: 12, color: TK.mut)),
+                    ]),
                   ),
                 ),
         );
@@ -165,44 +181,43 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 }
 
-/// Indikator koneksi, antrean, dan sinkron terakhir.
-class _SyncStrip extends StatelessWidget {
-  const _SyncStrip(this.s);
+/// Banner status sinkron. Tampil bila offline, ada antrean, atau ada masalah.
+class _SyncBanner extends StatelessWidget {
+  const _SyncBanner(this.s);
   final AppState s;
   @override
   Widget build(BuildContext context) {
-    final online = s.online;
-    final last = s.lastSyncAt;
     final failed = s.failedSync;
-    final tone = failed > 0 ? TK.bad : (online ? TK.gd : TK.warn);
-    return InkWell(
-      onTap: () => Navigator.pushNamed(context, Routes.sync),
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 44),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: failed > 0
-            ? TK.bad.withValues(alpha: .08)
-            : (online ? TK.g50 : TK.warn.withValues(alpha: .12)),
-        child: Row(children: [
-          Icon(online ? Icons.cloud_done_outlined : Icons.cloud_off_rounded,
-              size: 18, color: tone),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              [
-                online ? 'Online' : 'Offline · tetap bisa jualan',
-                if (s.pendingSync > 0) '${s.pendingSync} menunggu sinkron',
-                if (failed > 0) '$failed perlu bantuan',
-                if (last != null && s.pendingSync == 0 && failed == 0)
-                  'Sinkron ${hhmm(last)}',
-              ].join(' · '),
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: tone),
-            ),
-          ),
-          Icon(Icons.chevron_right_rounded, size: 18, color: tone),
-        ]),
-      ),
+    if (s.online && s.pendingSync == 0 && failed == 0) return const SizedBox.shrink();
+    final String title;
+    final String body;
+    final Tone tone;
+    final IconData icon;
+    if (failed > 0) {
+      title = '$failed perlu bantuan';
+      body = 'Ketuk untuk melihat masalah sinkronisasi';
+      tone = Tone.bad;
+      icon = Icons.error_outline_rounded;
+    } else if (!s.online) {
+      title = 'Offline? Tetap bisa jualan.';
+      body = s.pendingSync > 0
+          ? '${s.pendingSync} transaksi menunggu sinkron'
+          : 'Transaksi tersimpan di perangkat';
+      tone = Tone.warn;
+      icon = Icons.cloud_off_rounded;
+    } else {
+      title = 'Menyinkronkan…';
+      body = '${s.pendingSync} transaksi menunggu sinkron';
+      tone = Tone.warn;
+      icon = Icons.cloud_upload_outlined;
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: TkBanner(title,
+          body: body,
+          tone: tone,
+          icon: icon,
+          onTap: () => Navigator.pushNamed(context, Routes.sync)),
     );
   }
 }
@@ -219,46 +234,51 @@ class _ProductTile extends StatelessWidget {
     final q = s.qtyOf(id);
     final low = stock <= p.minStock;
     return TkCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-                color: TK.g50, borderRadius: BorderRadius.circular(12)),
-            child: p.imageUrl == null
-                ? _icon(p)
-                : Image.network(p.imageUrl!,
-                    fit: BoxFit.cover, errorBuilder: (_, __, ___) => _icon(p)),
-          ),
-          const SizedBox(width: 12),
+          if (p.imageUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(p.imageUrl!,
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            ),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(p.name,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 2),
                 // Stok lokal habis tidak memblokir penjualan (BR-06).
                 Text(
                     stock <= 0
                         ? '${p.category} · Stok lokal habis (tetap bisa dijual)'
                         : '${p.category} · Stok lokal $stock',
-                    style: TextStyle(fontSize: 12, color: low ? TK.warn : TK.mut)),
-                const SizedBox(height: 4),
-                Price(p.price),
+                    style: TextStyle(fontSize: 13, color: low ? TK.warn : TK.mut)),
+                const SizedBox(height: 6),
+                Price(p.price, size: 16, color: TK.g),
               ],
             ),
           ),
           if (q == 0)
-            IconButton.filledTonal(
-              tooltip: 'Tambah ${p.name}',
-              onPressed: () => s.add(id),
-              icon: const Icon(Icons.add),
-              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-              style: IconButton.styleFrom(
-                  backgroundColor: TK.g50, foregroundColor: TK.gd),
+            Tooltip(
+              message: 'Tambah ${p.name}',
+              child: Material(
+                color: TK.g50,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => s.add(id),
+                  child: const SizedBox(
+                      width: 52, height: 52, child: Icon(Icons.add, color: TK.gd)),
+                ),
+              ),
             )
           else
             QtyStepper(qty: q, onMinus: () => s.add(id, -1), onPlus: () => s.add(id)),
@@ -266,10 +286,6 @@ class _ProductTile extends StatelessWidget {
       ),
     );
   }
-
-  Widget _icon(Product p) => Icon(
-      p.category == 'Makanan' ? Icons.bakery_dining_rounded : Icons.local_cafe_rounded,
-      color: TK.g);
 }
 
 /// Dialog diskon: nominal rupiah atau persen.
@@ -283,13 +299,10 @@ Future<Discount?> pickDiscount(BuildContext context, Discount current,
       builder: (ctx, set) => AlertDialog(
         title: Text(title),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(value: false, label: Text('Rp')),
-              ButtonSegment(value: true, label: Text('%')),
-            ],
-            selected: {percent},
-            onSelectionChanged: (v) => set(() => percent = v.first),
+          TkSegmented<bool>(
+            options: const [(false, 'Rp'), (true, '%')],
+            value: percent,
+            onChanged: (v) => set(() => percent = v),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -344,7 +357,7 @@ class CartScreen extends StatelessWidget {
           title: 'Keranjang',
           bottom: Column(mainAxisSize: MainAxisSize.min, children: [
             TkButton('Lanjut ke pembayaran',
-                icon: Icons.arrow_forward_rounded,
+                trailing: Icons.arrow_forward_rounded,
                 onPressed: () => Navigator.pushNamed(context, Routes.payment)),
             gap8,
             Text(s.online ? 'Online' : 'Offline · Pembayaran tunai tetap tersedia',
@@ -354,55 +367,52 @@ class CartScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Pesanan baru',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -.6)),
               Text('${s.cartCount} item · ${s.branch}',
                   style: const TextStyle(color: TK.mut)),
               gap16,
               for (final e in s.cart.entries) ...[
                 _CartLine(e.key, e.value),
-                gap8,
+                gap12,
               ],
-              Row(children: [
-                Expanded(
-                  child: TkButton(
-                      s.cartNote.isEmpty ? 'Catatan pesanan' : 'Ubah catatan',
-                      kind: BtnKind.outline,
-                      small: true,
-                      icon: Icons.edit_note_rounded,
-                      onPressed: () => _editNote(context)),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TkButton(
-                      s.txnDiscount.isNone ? 'Diskon transaksi' : 'Ubah diskon',
-                      kind: BtnKind.outline,
-                      small: true,
-                      icon: Icons.sell_outlined,
-                      onPressed: () async {
-                        final d = await pickDiscount(context, s.txnDiscount,
-                            title: 'Diskon transaksi');
-                        if (d != null) s.setTxnDiscount(d);
-                      }),
-                ),
-              ]),
-              if (s.cartNote.isNotEmpty) ...[
-                gap8,
-                Text('Catatan: ${s.cartNote}',
-                    style: const TextStyle(fontSize: 13, color: TK.mut)),
-              ],
+              _ActionRow(
+                icon: Icons.sticky_note_2_outlined,
+                text: s.cartNote.isEmpty ? 'Tambah catatan pesanan' : s.cartNote,
+                active: s.cartNote.isNotEmpty,
+                onTap: () => _editNote(context),
+              ),
+              gap8,
+              _ActionRow(
+                icon: Icons.sell_outlined,
+                text: s.txnDiscount.isNone
+                    ? 'Tambah diskon transaksi'
+                    : 'Diskon transaksi ${s.txnDiscount.percent ? '${s.txnDiscount.value}%' : rupiah(s.txnDiscount.value)}',
+                active: !s.txnDiscount.isNone,
+                onTap: () async {
+                  final d = await pickDiscount(context, s.txnDiscount,
+                      title: 'Diskon transaksi');
+                  if (d != null) s.setTxnDiscount(d);
+                },
+              ),
               gap24,
-              const Cap('Ringkasan pembayaran'),
-              TkCard(
-                child: Column(children: [
-                  InfoRow('Subtotal', rupiah(t.subtotal)),
-                  InfoRow('Diskon item',
-                      t.itemDiscount > 0 ? rupiah(-t.itemDiscount) : 'Rp0'),
-                  InfoRow('Diskon transaksi',
-                      t.txnDiscount > 0 ? rupiah(-t.txnDiscount) : 'Rp0'),
-                  InfoRow('Pajak (${pctLabel(s.taxBps)}%)', rupiah(t.tax)),
-                  const Divider(height: 20),
-                  InfoRow('Total bayar', rupiah(t.total), bold: true),
-                ]),
+              const Text('Ringkasan pembayaran',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              gap8,
+              InfoRow('Subtotal', rupiah(t.subtotal)),
+              if (t.itemDiscount > 0)
+                InfoRow('Diskon item', rupiah(-t.itemDiscount), color: TK.g),
+              InfoRow('Diskon transaksi', rupiah(-t.txnDiscount),
+                  color: t.txnDiscount > 0 ? TK.g : null),
+              InfoRow('Pajak (${pctLabel(s.taxBps)}%)', rupiah(t.tax)),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Total bayar',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  Price(t.total, size: 22),
+                ],
               ),
             ],
           ),
@@ -428,6 +438,34 @@ class CartScreen extends StatelessWidget {
   }
 }
 
+/// Baris aksi bergaya kartu (catatan, diskon).
+class _ActionRow extends StatelessWidget {
+  const _ActionRow(
+      {required this.icon, required this.text, required this.onTap, this.active = false});
+  final IconData icon;
+  final String text;
+  final VoidCallback onTap;
+  final bool active;
+  @override
+  Widget build(BuildContext context) => TkCard(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: [
+          Icon(icon, size: 22, color: active ? TK.g : TK.ink),
+          const SizedBox(width: 14),
+          Expanded(
+              child: Text(text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                      color: active ? TK.ink : TK.mut))),
+          const Icon(Icons.chevron_right_rounded, color: TK.mut),
+        ]),
+      );
+}
+
 class _CartLine extends StatelessWidget {
   const _CartLine(this.id, this.qty);
   final String id;
@@ -439,30 +477,34 @@ class _CartLine extends StatelessWidget {
     final d = s.lineDiscounts[id] ?? const Discount.none();
     final line = PriceLine(p.price, qty, d);
     return TkCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(children: [
+      padding: const EdgeInsets.all(14),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text(p.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
               Text('$qty × ${rupiah(p.price)}',
                   style: const TextStyle(fontSize: 13, color: TK.mut)),
               if (!d.isNone)
                 Text(
                     'Diskon ${d.percent ? '${d.value}%' : rupiah(d.value)} (${rupiah(-line.discountAmount)})',
-                    style: const TextStyle(fontSize: 12, color: TK.gd)),
-              const SizedBox(height: 4),
-              Row(children: [
-                Price(line.net),
-                TextButton(
-                  onPressed: () async {
-                    final r = await pickDiscount(context, d, title: 'Diskon ${p.name}');
-                    if (r != null) s.setLineDiscount(id, r);
-                  },
-                  child: Text(d.isNone ? 'Beri diskon' : 'Ubah diskon'),
+                    style: const TextStyle(fontSize: 12, color: TK.g)),
+              const SizedBox(height: 8),
+              Price(line.net, size: 16, color: TK.g),
+              InkWell(
+                onTap: () async {
+                  final r = await pickDiscount(context, d, title: 'Diskon ${p.name}');
+                  if (r != null) s.setLineDiscount(id, r);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(d.isNone ? 'Beri diskon item' : 'Ubah diskon item',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600, color: TK.gd)),
                 ),
-              ]),
+              ),
             ],
           ),
         ),
@@ -470,6 +512,41 @@ class _CartLine extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Bingkai sudut hijau pada pemindai.
+class _ScanFramePainter extends CustomPainter {
+  const _ScanFramePainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = const Color(0xFF6FD3A8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+    const r = 28.0, l = 44.0;
+    final w = size.width, h = size.height;
+    void corner(double x, double y, double dx, double dy) {
+      final path = Path()
+        ..moveTo(x, y + dy * l)
+        ..lineTo(x, y + dy * r)
+        ..quadraticBezierTo(x, y, x + dx * r, y)
+        ..lineTo(x + dx * l, y);
+      canvas.drawPath(path, p);
+    }
+
+    corner(0, 0, 1, 1);
+    corner(w, 0, -1, 1);
+    corner(0, h, 1, -1);
+    corner(w, h, -1, -1);
+    final line = Paint()
+      ..color = const Color(0xFF6FD3A8)
+      ..strokeWidth = 3;
+    canvas.drawLine(Offset(w * .08, h / 2), Offset(w * .92, h / 2), line);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 /// M04 - Scan barcode dengan kamera (berfungsi tanpa internet) atau ketik manual.
@@ -536,10 +613,11 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget build(BuildContext context) {
     final s = AppState.I;
     final p = _foundId == null ? null : s.product(_foundId!);
+    const dark = Color(0xFF0B1511);
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1511),
+      backgroundColor: dark,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B1511),
+        backgroundColor: dark,
         foregroundColor: Colors.white,
         shape: const Border(),
         title: const Text('Scan barcode',
@@ -549,30 +627,38 @@ class _ScanScreenState extends State<ScanScreen> {
         child: Column(
           children: [
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: MobileScanner(
-                    controller: _ctl,
-                    onDetect: (cap) {
-                      for (final b in cap.barcodes) {
-                        final v = b.rawValue;
-                        if (v != null && v.isNotEmpty) {
-                          _lookup(v);
-                          break;
-                        }
-                      }
-                    },
-                    errorBuilder: (ctx, err) => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
-                            'Kamera tidak tersedia. Izinkan akses kamera atau ketik kode manual.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70)),
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.all(36),
+                    child: Stack(fit: StackFit.expand, children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: MobileScanner(
+                          controller: _ctl,
+                          onDetect: (cap) {
+                            for (final b in cap.barcodes) {
+                              final v = b.rawValue;
+                              if (v != null && v.isNotEmpty) {
+                                _lookup(v);
+                                break;
+                              }
+                            }
+                          },
+                          errorBuilder: (ctx, err) => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                  'Kamera tidak tersedia. Izinkan akses kamera atau ketik kode manual.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white70)),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const CustomPaint(painter: _ScanFramePainter()),
+                    ]),
                   ),
                 ),
               ),
@@ -583,46 +669,38 @@ class _ScanScreenState extends State<ScanScreen> {
             const Text('Berfungsi tanpa internet.',
                 style: TextStyle(color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(children: [
-                Expanded(
-                  child: TkButton('Senter',
-                      kind: BtnKind.outline,
-                      small: true,
-                      icon: Icons.flashlight_on_outlined,
-                      onPressed: () => _ctl.toggleTorch()),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TkButton('Ketik kode manual',
-                      kind: BtnKind.outline,
-                      small: true,
-                      icon: Icons.keyboard_alt_outlined,
-                      onPressed: _manual),
-                ),
-              ]),
-            ),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              _DarkChipButton(Icons.flashlight_on_outlined, 'Senter', () => _ctl.toggleTorch()),
+              const SizedBox(width: 10),
+              _DarkChipButton(Icons.keyboard_alt_outlined, 'Ketik kode manual', _manual),
+            ]),
             const SizedBox(height: 12),
             if (p != null)
               Container(
                 margin: const EdgeInsets.all(12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                    color: Colors.white, borderRadius: BorderRadius.circular(18)),
+                    color: Colors.white, borderRadius: BorderRadius.circular(20)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Produk ditemukan · ${p.sku}',
-                        style: const TextStyle(
-                            color: TK.gd, fontSize: 12, fontWeight: FontWeight.w700)),
-                    gap8,
                     Row(children: [
+                      const IconTile(Icons.check_rounded, size: 48),
+                      const SizedBox(width: 12),
                       Expanded(
-                          child: Text(p.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700, fontSize: 16))),
-                      Price(p.price, size: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Produk ditemukan · ${p.sku}',
+                                style: const TextStyle(
+                                    color: TK.mut, fontSize: 13)),
+                            Text(p.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800, fontSize: 17)),
+                          ],
+                        ),
+                      ),
+                      Price(p.price, size: 17),
                     ]),
                     gap12,
                     Row(children: [
@@ -630,9 +708,9 @@ class _ScanScreenState extends State<ScanScreen> {
                           qty: _qty,
                           onMinus: _qty > 1 ? () => setState(() => _qty--) : null,
                           onPlus: () => setState(() => _qty++)),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: TkButton('Tambah ke keranjang', small: true, onPressed: () {
+                        child: TkButton('Tambah ke keranjang', onPressed: () {
                           s.add(p.id, _qty);
                           toast(context, '${p.name} ditambahkan.');
                           setState(() {
@@ -650,4 +728,31 @@ class _ScanScreenState extends State<ScanScreen> {
       ),
     );
   }
+}
+
+class _DarkChipButton extends StatelessWidget {
+  const _DarkChipButton(this.icon, this.label, this.onTap);
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+        color: const Color(0xFF2B3732),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(icon, size: 18, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+            ]),
+          ),
+        ),
+      );
 }

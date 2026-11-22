@@ -28,14 +28,13 @@ ThemeData buildTheme() {
   return base.copyWith(
     textTheme: text,
     appBarTheme: AppBarTheme(
-      backgroundColor: Colors.white,
+      backgroundColor: TK.bg,
       foregroundColor: TK.ink,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       titleTextStyle: text.titleMedium
-          ?.copyWith(fontSize: 17, fontWeight: FontWeight.w700, color: TK.ink),
-      shape: const Border(bottom: BorderSide(color: TK.line)),
+          ?.copyWith(fontSize: 17, fontWeight: FontWeight.w600, color: TK.ink),
     ),
     dividerTheme: const DividerThemeData(color: TK.line, space: 1, thickness: 1),
   );

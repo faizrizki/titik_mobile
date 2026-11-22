@@ -13,11 +13,13 @@ class TkButton extends StatelessWidget {
       this.onPressed,
       this.kind = BtnKind.primary,
       this.icon,
+      this.trailing,
       this.small = false});
   final String label;
   final VoidCallback? onPressed;
   final BtnKind kind;
   final IconData? icon;
+  final IconData? trailing;
   final bool small;
 
   @override
@@ -50,6 +52,7 @@ class TkButton extends StatelessWidget {
           children: [
             if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
             Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
+            if (trailing != null) ...[const SizedBox(width: 8), Icon(trailing, size: 18)],
           ],
         ),
       ),
@@ -95,9 +98,10 @@ enum Tone { ok, warn, bad, neutral }
     };
 
 class TkBadge extends StatelessWidget {
-  const TkBadge(this.text, {super.key, this.tone = Tone.ok});
+  const TkBadge(this.text, {super.key, this.tone = Tone.ok, this.icon});
   final String text;
   final Tone tone;
+  final IconData? icon;
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = _tone(tone);
@@ -107,26 +111,34 @@ class TkBadge extends StatelessWidget {
       decoration:
           BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
       alignment: Alignment.center,
-      child: Text(text,
-          style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[Icon(icon, size: 14, color: fg), const SizedBox(width: 4)],
+        Text(text,
+            style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
+      ]),
     );
   }
 }
 
 class TkBanner extends StatelessWidget {
   const TkBanner(this.title,
-      {super.key, this.body, this.tone = Tone.warn, this.icon});
+      {super.key, this.body, this.tone = Tone.warn, this.icon, this.onTap});
   final String title;
   final String? body;
   final Tone tone;
   final IconData? icon;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = _tone(tone);
-    return Container(
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
       padding: const EdgeInsets.all(14),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -146,9 +158,10 @@ class TkBanner extends StatelessWidget {
               ],
             ),
           ),
+          if (onTap != null) Icon(Icons.chevron_right_rounded, color: fg),
         ],
       ),
-    );
+    )));
   }
 }
 
@@ -161,31 +174,35 @@ class QtyStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget b(IconData i, VoidCallback? f, String label) => Semantics(
-        button: true,
-        label: label,
-        child: InkWell(
-          onTap: f,
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: f == null ? TK.neutralBg : TK.g50,
-              borderRadius: BorderRadius.circular(10),
+          button: true,
+          label: label,
+          child: InkWell(
+            onTap: f,
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(i, size: 20, color: f == null ? TK.line : TK.gd),
             ),
-            child: Icon(i, size: 20, color: f == null ? TK.mut : TK.gd),
           ),
-        ));
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      b(Icons.remove, onMinus, 'Kurangi'),
-      SizedBox(
-        width: 32,
-        child: Text('$qty',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+        );
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: TK.line),
+        borderRadius: BorderRadius.circular(14),
       ),
-      b(Icons.add, onPlus, 'Tambah'),
-    ]);
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        b(Icons.remove, onMinus, 'Kurangi'),
+        SizedBox(
+          width: 28,
+          child: Text('$qty',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        ),
+        b(Icons.add, onPlus, 'Tambah'),
+      ]),
+    );
   }
 }
 
@@ -337,6 +354,7 @@ class Screen extends StatelessWidget {
         title: Text(title),
         automaticallyImplyLeading: showBack,
         actions: actions,
+        backgroundColor: TK.bg,
       ),
       body: SafeArea(
         child: SingleChildScrollView(padding: padding, child: child),
@@ -369,3 +387,96 @@ const gap8 = SizedBox(height: 8);
 const gap12 = SizedBox(height: 12);
 const gap16 = SizedBox(height: 16);
 const gap24 = SizedBox(height: 24);
+
+
+/// Kontrol segmen abu-abu dengan pil putih untuk pilihan aktif (desain titik).
+class TkSegmented<T> extends StatelessWidget {
+  const TkSegmented(
+      {super.key, required this.options, required this.value, required this.onChanged});
+  final List<(T, String)> options;
+  final T value;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+          color: TK.neutralBg, borderRadius: BorderRadius.circular(14)),
+      child: Row(children: [
+        for (final (v, label) in options)
+          Expanded(
+            child: Semantics(
+              button: true,
+              selected: v == value,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(v),
+                child: Container(
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: v == value ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: v == value
+                        ? [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: .08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1))
+                          ]
+                        : null,
+                  ),
+                  child: Text(label,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: v == value ? TK.ink : TK.mut)),
+                ),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+/// Kotak ikon bulat-sudut (leading pada baris dan kartu).
+class IconTile extends StatelessWidget {
+  const IconTile(this.icon,
+      {super.key, this.size = 44, this.bg = TK.g50, this.fg = TK.g});
+  final IconData icon;
+  final double size;
+  final Color bg;
+  final Color fg;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(size * .28)),
+        child: Icon(icon, size: size * .5, color: fg),
+      );
+}
+
+/// Tombol ikon tonal (bar atas katalog).
+class TonalIconButton extends StatelessWidget {
+  const TonalIconButton(this.icon, this.tooltip, this.onPressed, {super.key});
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: Material(
+          color: TK.g50,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onPressed,
+            child: SizedBox(
+                width: 48, height: 48, child: Icon(icon, color: TK.gd, size: 22)),
+          ),
+        ),
+      );
+}

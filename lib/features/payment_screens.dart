@@ -12,6 +12,65 @@ import '../data/app_state.dart';
 import '../data/backend.dart';
 import '../data/models.dart';
 
+/// Kartu total bayar hijau muda (pembayaran dan QRIS).
+class _TotalCard extends StatelessWidget {
+  const _TotalCard(this.total, this.itemCount);
+  final int total;
+  final int itemCount;
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration:
+            BoxDecoration(color: TK.g50, borderRadius: BorderRadius.circular(20)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('TOTAL BAYAR',
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: .8, color: TK.gd)),
+          const SizedBox(height: 4),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(child: Price(total, size: 40, color: TK.gd)),
+            Text('$itemCount item',
+                style: const TextStyle(fontSize: 14, color: TK.mut)),
+          ]),
+        ]),
+      );
+}
+
+class _MethodTile extends StatelessWidget {
+  const _MethodTile(this.icon, this.label, this.selected, this.dim, this.onTap);
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool dim;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: selected,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: selected ? TK.g50 : TK.neutralBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: selected ? TK.g : Colors.transparent, width: 1.6),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, color: selected ? TK.gd : (dim ? TK.mut.withValues(alpha: .6) : TK.ink)),
+              const SizedBox(width: 10),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: selected ? TK.gd : (dim ? TK.mut.withValues(alpha: .7) : TK.ink))),
+            ]),
+          ),
+        ),
+      );
+}
+
 /// M15 - Pembayaran tunai
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -37,6 +96,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
+  Widget _chip(String label, int amount, int received) {
+    final sel = received == amount && received > 0;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _recv.text = '$amount'),
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: sel ? TK.g : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: sel ? TK.g : TK.line),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: sel ? Colors.white : TK.ink)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = AppState.I;
@@ -46,11 +129,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final canPay = _method == PayMethod.cash ? received >= total : true;
 
     return Screen(
-      title: _method == PayMethod.cash ? 'Pembayaran tunai' : 'Pembayaran',
+      title: 'Pembayaran',
       bottom: Column(mainAxisSize: MainAxisSize.min, children: [
         TkButton(
           _method == PayMethod.cash ? 'Selesaikan pembayaran' : 'Tampilkan QRIS',
-          icon: Icons.check_rounded,
+          trailing: Icons.arrow_forward_rounded,
           onPressed: !canPay || _busy
               ? null
               : () {
@@ -68,42 +151,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TkCard(
-            color: TK.g50,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Total bayar',
-                      style: TextStyle(color: TK.gd, fontWeight: FontWeight.w600)),
-                  Price(total, size: 28, color: TK.gd),
-                ]),
-                TkBadge('${s.cartCount} item'),
-              ],
-            ),
-          ),
+          _TotalCard(total, s.cartCount),
           gap24,
-          const Cap('Metode pembayaran'),
+          const Text('Metode pembayaran',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          gap12,
           Row(children: [
             Expanded(
-              child: TkButton('Tunai',
-                  kind: _method == PayMethod.cash ? BtnKind.primary : BtnKind.outline,
-                  icon: Icons.payments_outlined,
-                  onPressed: () => setState(() => _method = PayMethod.cash)),
+              child: _MethodTile(Icons.payments_outlined, 'Tunai',
+                  _method == PayMethod.cash, false,
+                  () => setState(() => _method = PayMethod.cash)),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
-              child: TkButton('QRIS',
-                  kind: _method == PayMethod.qris ? BtnKind.primary : BtnKind.outline,
-                  icon: Icons.qr_code_2_rounded,
-                  onPressed: () => setState(() => _method = PayMethod.qris)),
+              child: _MethodTile(Icons.qr_code_2_rounded, 'QRIS',
+                  _method == PayMethod.qris, !s.online,
+                  () => setState(() => _method = PayMethod.qris)),
             ),
           ]),
+          gap8,
+          GestureDetector(
+            onTap: () => setState(() => _method = PayMethod.qris),
+            child: Text.rich(TextSpan(
+              style: const TextStyle(fontSize: 13, color: TK.mut),
+              children: [
+                const TextSpan(text: 'QRIS memerlukan koneksi internet. '),
+                if (!s.online)
+                  const TextSpan(
+                      text: 'Lihat alur QRIS saat online',
+                      style: TextStyle(color: TK.gd, fontWeight: FontWeight.w700)),
+              ],
+            )),
+          ),
           gap16,
           if (_method == PayMethod.qris)
-            const TkBanner('QRIS memerlukan koneksi internet.',
+            const TkBanner('QR dibuat di layar berikutnya.',
                 body: 'Jika offline, gunakan pembayaran tunai.',
-                icon: Icons.wifi_rounded)
+                icon: Icons.wifi_rounded,
+                tone: Tone.ok)
           else ...[
             TkField(
               label: 'Uang diterima',
@@ -115,36 +200,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
             gap12,
             Row(children: [
-              Expanded(
-                child: TkButton('Uang pas',
-                    kind: BtnKind.outline,
-                    small: true,
-                    onPressed: () => setState(() => _recv.text = '$total')),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TkButton('Rp50.000',
-                    kind: BtnKind.outline,
-                    small: true,
-                    onPressed: () => setState(() => _recv.text = '50000')),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TkButton('Rp100.000',
-                    kind: BtnKind.outline,
-                    small: true,
-                    onPressed: () => setState(() => _recv.text = '100000')),
-              ),
+              _chip('Uang pas', total, received),
+              _chip('Rp50.000', 50000, received),
+              _chip('Rp100.000', 100000, received),
             ]),
             gap16,
             TkCard(
-              child: InfoRow('Kembalian', received >= total ? rupiah(change) : '—',
-                  bold: true),
+              padding: const EdgeInsets.all(18),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Kembalian',
+                    style: TextStyle(fontSize: 14, color: TK.mut)),
+                const SizedBox(height: 4),
+                Price(received >= total ? change : 0, size: 34, color: TK.gd),
+              ]),
             ),
             gap12,
-            const Text(
-                'Disimpan lokal, lalu disinkronkan otomatis saat internet kembali.',
-                style: TextStyle(fontSize: 12, color: TK.mut)),
+            const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.cloud_off_rounded, size: 18, color: TK.mut),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                    'Disimpan lokal, lalu disinkronkan otomatis saat internet kembali.',
+                    style: TextStyle(fontSize: 13, color: TK.mut)),
+              ),
+            ]),
           ],
         ],
       ),
@@ -284,7 +363,6 @@ class _QrisScreenState extends State<QrisScreen> {
           TkButton('Buat QR baru', icon: Icons.refresh_rounded, onPressed: _create)
         else
           TkButton('Cek status pembayaran',
-              icon: Icons.refresh_rounded,
               onPressed: _phase == _QrPhase.waiting ? _check : null),
         if (_phase == _QrPhase.offline) ...[
           gap8,
@@ -300,35 +378,55 @@ class _QrisScreenState extends State<QrisScreen> {
       ]),
       child: Column(
         children: [
-          const Text('Total bayar', style: TextStyle(color: TK.mut)),
-          Price(_amount, size: 32),
-          Text('${s.cartCount} item', style: const TextStyle(color: TK.mut)),
+          _TotalCard(_amount, s.cartCount),
           gap16,
           TkCard(
+            padding: const EdgeInsets.all(20),
             child: Column(children: [
-              const Text('QRIS', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-              Text('${s.businessName} · ${s.branch}',
-                  style: const TextStyle(color: TK.mut, fontSize: 13)),
-              gap12,
-              SizedBox(
-                width: 200,
-                height: 200,
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Text('QRIS',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22)),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text('${s.businessName} · ${s.branch}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: TK.mut, fontSize: 14)),
+                ),
+              ]),
+              gap16,
+              Container(
+                width: 230,
+                height: 230,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: TK.line),
+                ),
                 child: switch (_phase) {
                   _QrPhase.creating =>
                     const Center(child: CircularProgressIndicator(color: TK.g)),
                   _QrPhase.waiting || _QrPhase.expired when c != null => Opacity(
                       opacity: _phase == _QrPhase.expired ? .25 : 1,
-                      child: QrImageView(data: c.qrString, size: 200, padding: EdgeInsets.zero),
+                      child: QrImageView(
+                          data: c.qrString,
+                          padding: EdgeInsets.zero,
+                          eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square, color: Color(0xFF12241E)),
+                          dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Color(0xFF12241E))),
                     ),
                   _ => const Center(
                       child: Icon(Icons.qr_code_2_rounded, size: 96, color: TK.line)),
                 },
               ),
-              gap12,
+              gap16,
               if (_phase == _QrPhase.waiting)
-                TkBadge('Berlaku $mm:$ss', tone: Tone.warn)
+                TkBadge('Berlaku $mm:$ss',
+                    tone: Tone.warn, icon: Icons.schedule_rounded)
               else if (_phase == _QrPhase.expired)
-                const TkBadge('Kedaluwarsa', tone: Tone.bad),
+                const TkBadge('Kedaluwarsa', tone: Tone.bad, icon: Icons.timer_off_outlined),
             ]),
           ),
           gap16,
@@ -336,7 +434,7 @@ class _QrisScreenState extends State<QrisScreen> {
             _QrPhase.waiting => const TkBanner('Menunggu pembayaran…',
                 body: 'Pelanggan memindai dengan aplikasi bank atau e-wallet apa pun.',
                 tone: Tone.ok,
-                icon: Icons.hourglass_bottom_rounded),
+                icon: Icons.check_rounded),
             _QrPhase.expired => const TkBanner('QR kedaluwarsa',
                 body: 'Buat QR baru untuk transaksi yang sama.',
                 tone: Tone.bad,
@@ -385,55 +483,90 @@ class _SuccessScreenState extends State<SuccessScreen> {
   Widget build(BuildContext context) {
     final s = AppState.I;
     final t = s.txn(widget.txnId);
-    return Screen(
-      title: 'Pembayaran berhasil',
-      showBack: false,
-      bottom: Column(mainAxisSize: MainAxisSize.min, children: [
-        TkButton('Transaksi baru',
-            icon: Icons.add_rounded,
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context, Routes.catalog, (r) => false)),
-        gap8,
-        const Text('Struk tetap bisa dicetak tanpa internet.',
-            style: TextStyle(fontSize: 12, color: TK.mut)),
-      ]),
-      child: ListenableBuilder(
-        listenable: s,
-        builder: (context, _) => Column(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: TK.g, size: 64),
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ListenableBuilder(
+            listenable: s,
+            builder: (context, _) => Column(
+              children: [
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Flexible(
+                    child: Text(s.businessName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(s.branch,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: TK.mut)),
+                  ),
+                ]),
+                gap24,
+                Container(
+                  width: 112,
+                  height: 112,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: TK.g50),
+                  child: const Icon(Icons.check_rounded, color: TK.gd, size: 56),
+                ),
+                gap16,
+                const Text('Pembayaran berhasil',
+                    style: TextStyle(
+                        fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -.6)),
+                const SizedBox(height: 4),
+                const Text('Transaksi aman tersimpan di perangkat.',
+                    style: TextStyle(color: TK.mut)),
+                gap24,
+                ReceiptCard(txn: t),
+                gap12,
+                if (t.needsReconcile) ...[
+                  const TkBanner('Menunggu rekonsiliasi QRIS',
+                      body: 'Dicatat saat offline; akan dicocokkan dengan webhook pembayaran.',
+                      icon: Icons.sync_problem_rounded),
+                  gap12,
+                ],
+                if (s.pendingSync > 0) ...[
+                  TkBanner('${s.pendingSync} transaksi menunggu sinkron',
+                      body: 'Akan terkirim saat internet kembali.',
+                      icon: Icons.schedule_rounded,
+                      onTap: () => Navigator.pushNamed(context, Routes.sync)),
+                  gap12,
+                ],
+                Row(children: [
+                  Expanded(
+                      child: TkButton('Cetak struk',
+                          kind: BtnKind.soft,
+                          icon: Icons.print_outlined,
+                          onPressed: _print)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: TkButton('Bagikan',
+                          kind: BtnKind.soft,
+                          icon: Icons.ios_share_rounded,
+                          onPressed: () =>
+                              PrinterService.I.sharePdf(t, s.businessName, s.branch))),
+                ]),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        color: TK.bg,
+        child: SafeArea(
+          top: false,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TkButton('Transaksi baru',
+                trailing: Icons.arrow_forward_rounded,
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                    context, Routes.catalog, (r) => false)),
             gap8,
-            const Text('Pembayaran berhasil',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-            const Text('Transaksi aman tersimpan di perangkat.',
-                style: TextStyle(color: TK.mut)),
-            gap16,
-            ReceiptCard(txn: t),
-            gap12,
-            if (t.needsReconcile)
-              const TkBanner('Menunggu rekonsiliasi QRIS',
-                  body: 'Dicatat saat offline; akan dicocokkan dengan webhook pembayaran.',
-                  icon: Icons.sync_problem_rounded),
-            if (s.pendingSync > 0)
-              TkBanner('${s.pendingSync} transaksi menunggu sinkron',
-                  body: 'Akan terkirim saat internet kembali.',
-                  icon: Icons.cloud_upload_outlined),
-            gap12,
-            Row(children: [
-              Expanded(
-                  child: TkButton('Cetak struk',
-                      kind: BtnKind.outline,
-                      icon: Icons.print_outlined,
-                      onPressed: _print)),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: TkButton('Bagikan PDF',
-                      kind: BtnKind.outline,
-                      icon: Icons.ios_share_rounded,
-                      onPressed: () =>
-                          PrinterService.I.sharePdf(t, s.businessName, s.branch))),
-            ]),
-          ],
+            const Text('Struk tetap bisa dicetak tanpa internet.',
+                style: TextStyle(fontSize: 12, color: TK.mut)),
+          ]),
         ),
       ),
     );
@@ -441,30 +574,54 @@ class _SuccessScreenState extends State<SuccessScreen> {
 }
 
 /// Kartu struk, dipakai di M16 dan M07. Memakai snapshot nama dan harga (BR-04).
+/// [detail] = tajuk rata kiri-kanan seperti layar detail transaksi.
 class ReceiptCard extends StatelessWidget {
-  const ReceiptCard({super.key, required this.txn});
+  const ReceiptCard({super.key, required this.txn, this.detail = false});
   final Txn txn;
+  final bool detail;
 
   @override
   Widget build(BuildContext context) {
     final s = AppState.I;
     return TkCard(
+      padding: const EdgeInsets.all(18),
       child: Column(children: [
-        Text(s.businessName.toUpperCase(),
-            style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
-        Text('#${txn.id} · ${tanggal(txn.time)}, ${hhmm(txn.time)}',
-            style: const TextStyle(fontSize: 12, color: TK.mut)),
+        if (detail)
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text(s.businessName,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            Flexible(
+              child: Text(
+                  '${s.branch} · Kasir ${(txn.cashierName.isEmpty ? s.cashierName : txn.cashierName).split(' ').first}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: TK.mut, fontSize: 13)),
+            ),
+          ])
+        else ...[
+          Text(s.businessName.toUpperCase(),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: 16)),
+          Text('#${txn.id} · ${tanggal(txn.time)}, ${hhmm(txn.time)}',
+              style: const TextStyle(fontSize: 13, color: TK.mut)),
+        ],
         const Divider(height: 24),
         for (final l in txn.lines) ...[
           InfoRow('${l.qty}× ${l.name}', rupiah(l.gross)),
           if (!l.discount.isNone)
-            InfoRow('   Diskon item', rupiah(-l.priced.discountAmount), color: TK.gd),
+            InfoRow('   Diskon item', rupiah(-l.priced.discountAmount), color: TK.g),
         ],
         if (txn.totals.txnDiscount > 0)
-          InfoRow('Diskon transaksi', rupiah(-txn.totals.txnDiscount)),
+          InfoRow('Diskon transaksi', rupiah(-txn.totals.txnDiscount), color: TK.g),
         if (txn.tax > 0) InfoRow('Pajak (${pctLabel(txn.taxBps)}%)', rupiah(txn.tax)),
-        const Divider(height: 20),
-        InfoRow('Total bayar', rupiah(txn.total), bold: true),
+        const Divider(height: 24),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Flexible(
+            child: Text('Total bayar',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          ),
+          Price(txn.total, size: 22),
+        ]),
+        const SizedBox(height: 8),
         if (txn.method == PayMethod.cash)
           InfoRow('Tunai / Kembalian', '${rupiah(txn.paid)} / ${rupiah(txn.change)}')
         else

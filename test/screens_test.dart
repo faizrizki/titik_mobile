@@ -26,7 +26,7 @@ void main() {
 
     expect(find.text('Americano'), findsOneWidget);
     expect(find.textContaining('Offline'), findsWidgets);
-    expect(find.textContaining('1 menunggu sinkron'), findsOneWidget);
+    expect(find.textContaining('1 transaksi menunggu sinkron'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'matcha');
     await tester.pump();

@@ -28,3 +28,8 @@ String pctLabel(int bps) {
   final s = (bps / 100).toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '');
   return s.replaceAll('.', ',');
 }
+
+const _hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
+/// "Rabu, 18 Nov 2026"
+String tanggalHari(DateTime t) => '${_hari[t.weekday - 1]}, ${tanggal(t)}';
