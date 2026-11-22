@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'core/printer_service.dart';
 import 'data/app_state.dart';
 import 'data/backend.dart';
@@ -13,7 +15,10 @@ const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
 /// Merakit database lokal, backend, dan worker sinkronisasi.
 Future<void> bootstrap() async {
   final tokens = SecureTokenStore();
-  final state = AppState(store: SqliteStore(), tokens: tokens);
+  // Web (pratinjau): SQLite tidak tersedia di browser, data hanya di memori
+  // dan hilang saat halaman dimuat ulang. Perangkat Android memakai SQLite.
+  final LocalStore store = kIsWeb ? MemoryStore() : SqliteStore();
+  final state = AppState(store: store, tokens: tokens);
   AppState.I = state;
 
   final SyncApi api;
@@ -36,6 +41,10 @@ Future<void> bootstrap() async {
   final sync = SyncService(state: state, api: api, probe: PlatformConnectivity());
   state.sync = sync;
   sync.addListener(state.touch);
-  await PrinterService.I.load();
+  try {
+    await PrinterService.I.load();
+  } catch (_) {
+    // Pengaturan printer opsional; jangan menggagalkan startup.
+  }
   await sync.start();
 }

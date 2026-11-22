@@ -10,8 +10,22 @@ const _sentryDsn = String.fromEnvironment('SENTRY_DSN');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Future<void> run() async {
-    await bootstrap();
-    runApp(const TitikApp());
+    try {
+      await bootstrap();
+      runApp(const TitikApp());
+    } catch (e, st) {
+      debugPrint('Startup gagal: $e\n$st');
+      runApp(MaterialApp(
+        home: Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: SelectableText('Aplikasi gagal dimulai.\n\n$e'),
+            ),
+          ),
+        ),
+      ));
+    }
   }
 
   if (_sentryDsn.isEmpty) {
