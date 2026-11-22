@@ -1,0 +1,36 @@
+name: titik_mobile
+description: titik - aplikasi kasir (POS) offline-first untuk UMKM.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  connectivity_plus: ^7.3.2
+  crypto: ^3.0.8
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^10.3.4
+  google_fonts: ^6.2.1
+  http: ^1.6.0
+  mobile_scanner: ^7.5.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  pdf: ^3.11.3
+  print_bluetooth_thermal: ^1.2.1
+  printing: ^5.14.3
+  qr_flutter: ^4.1.0
+  sentry_flutter: ^9.30.2
+  shared_preferences: ^2.5.3
+  sqflite: ^2.4.2
+  uuid: ^4.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  sqflite_common_ffi: ^2.3.6
+
+flutter:
+  uses-material-design: true
